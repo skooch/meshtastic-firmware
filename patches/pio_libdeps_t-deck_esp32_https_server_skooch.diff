@@ -1,0 +1,45 @@
+diff --git a/src/HTTPConnection.cpp b/src/HTTPConnection.cpp
+index 553a36c..b983b9b 100644
+--- a/src/HTTPConnection.cpp
++++ b/src/HTTPConnection.cpp
+@@ -664,7 +664,7 @@ void handleWebsocketHandshake(HTTPRequest * req, HTTPResponse * res) {
+ std::string websocketKeyResponseHash(std::string const &key) {
+   std::string newKey = key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+   uint8_t shaData[HTTPS_SHA1_LENGTH];
+-  mbedtls_sha1_ret((uint8_t*)newKey.data(), newKey.length(), shaData);
++  mbedtls_sha1((uint8_t*)newKey.data(), newKey.length(), shaData);
+ 
+   // Get output size required for base64 representation
+   size_t b64BufferSize = 0;
+diff --git a/src/SSLCert.cpp b/src/SSLCert.cpp
+index 3df7073..99bf446 100644
+--- a/src/SSLCert.cpp
++++ b/src/SSLCert.cpp
+@@ -160,6 +160,9 @@ static int cert_write(SSLCert &certCtx, std::string dn, std::string validityFrom
+   mbedtls_pk_context key;
+   mbedtls_x509write_cert crt;
+   mbedtls_mpi serial;
++  unsigned char * mpi_export_buffer;
++  unsigned char mpi_serial_int = '1';
++  mpi_export_buffer = &mpi_serial_int;
+   unsigned char * primary_buffer;
+   unsigned char *certOffset;
+   unsigned char * output_buffer;
+@@ -181,7 +184,7 @@ static int cert_write(SSLCert &certCtx, std::string dn, std::string validityFrom
+   }
+ 
+   mbedtls_pk_init( &key );
+-  stepRes = mbedtls_pk_parse_key( &key, certCtx.getPKData(), certCtx.getPKLength(), NULL, 0 );
++  stepRes = mbedtls_pk_parse_key( &key, certCtx.getPKData(), certCtx.getPKLength(), NULL, 0, mbedtls_ctr_drbg_random, &ctr_drbg );
+   if (stepRes != 0) {
+     funcRes = HTTPS_SERVER_ERROR_CERTGEN_READKEY;
+     goto error_after_key;
+@@ -230,7 +233,7 @@ static int cert_write(SSLCert &certCtx, std::string dn, std::string validityFrom
+     funcRes = HTTPS_SERVER_ERROR_CERTGEN_SERIAL;
+     goto error_after_cert_serial;
+   }
+-  stepRes = mbedtls_x509write_crt_set_serial( &crt, &serial );
++  stepRes = mbedtls_x509write_crt_set_serial_raw( &crt, mpi_export_buffer, 1 ); // FIXME: skooch bug
+   if (stepRes != 0) {
+     funcRes = HTTPS_SERVER_ERROR_CERTGEN_SERIAL;
+     goto error_after_cert_serial;
