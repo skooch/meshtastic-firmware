@@ -335,7 +335,7 @@ void MQTT::reconnect()
             mqttUsername = moduleConfig.mqtt.username;
             mqttPassword = moduleConfig.mqtt.password;
         }
-#if HAS_WIFI && !defined(ARCH_PORTDUINO)
+#if HAS_WIFI && !defined(ARCH_PORTDUINO) && defined(ESP_ARDUINO_VERSION_MAJOR) && ESP_ARDUINO_VERSION_MAJOR < 3
 #if !defined(CONFIG_IDF_TARGET_ESP32C6) && !defined(RPI_PICO)
         if (moduleConfig.mqtt.tls_enabled) {
             // change default for encrypted to 8883
